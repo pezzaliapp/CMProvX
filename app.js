@@ -37,7 +37,6 @@ document.addEventListener("DOMContentLoaded", function() {
   searchInput.addEventListener("input", function() {
     const query = searchInput.value.toLowerCase();
     const filtered = productsData.filter(product => {
-      // Supponiamo che il CSV contenga: Codice, Descrizione, PrezzoLordo, TRINST, Categoria
       return product.Codice.toLowerCase().includes(query) ||
              product.Descrizione.toLowerCase().includes(query);
     });
@@ -49,7 +48,7 @@ document.addEventListener("DOMContentLoaded", function() {
     productSelect.innerHTML = "";
     products.forEach(product => {
       const option = document.createElement("option");
-      option.value = product.Codice; // utilizziamo il Codice come valore
+      option.value = product.Codice;
       option.textContent = product.Codice + " - " + product.Descrizione;
       option.setAttribute("data-product", JSON.stringify(product));
       productSelect.appendChild(option);
@@ -65,11 +64,11 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     const productData = JSON.parse(selectedOption.getAttribute("data-product"));
     addProductRow(productData);
-    // Pulizia del campo di ricerca
     searchInput.value = "";
   });
 
-  // Funzione per creare una "riga prodotto" con i dati e il form per inserire lo sconto
+  // Crea una "riga prodotto" con i dati, il menu per selezionare la categoria,
+  // la visualizzazione dei costi variabili (TRINST) e il form per inserire lo sconto
   function addProductRow(product) {
     productsSection.style.display = "block";
     globalCostsSection.style.display = "block";
@@ -79,7 +78,13 @@ document.addEventListener("DOMContentLoaded", function() {
     row.innerHTML = `
       <h3>Prodotto: ${product.Codice} - ${product.Descrizione}</h3>
       <p><strong>Prezzo Lordo:</strong> <span class="prezzo-lordo">${parseFloat(product.PrezzoLordo).toFixed(2)}€</span></p>
-      <p><strong>Categoria:</strong> <span class="categoria">${product.Categoria}</span></p>
+      <label for="categoria-${product.Codice}"><strong>Seleziona la Categoria:</strong></label>
+      <select id="categoria-${product.Codice}" class="categoria-select">
+        <option value="rivenditore" ${product.Categoria.toLowerCase() === "rivenditore" ? "selected" : ""}>Rivenditore</option>
+        <option value="smontagomme" ${product.Categoria.toLowerCase() === "smontagomme" ? "selected" : ""}>Smontagomme + Equilibratici</option>
+        <option value="sollevamento" ${product.Categoria.toLowerCase() === "sollevamento" ? "selected" : ""}>Sollevamento</option>
+      </select>
+      <p><strong>Costi Variabili (TRINST):</strong> <span class="trinst">${parseFloat(product.TRINST).toFixed(2)}€</span></p>
       <label for="discount-${product.Codice}"><strong>Sconto Applicato (%):</strong></label>
       <input type="number" id="discount-${product.Codice}" class="discount-input" placeholder="Inserisci sconto">
       <button class="calculateBtn">Calcola</button>
@@ -87,7 +92,7 @@ document.addEventListener("DOMContentLoaded", function() {
         <p>Prezzo Netto: <span class="netPrice">0.00€</span></p>
         <p>Compenso Agente: <span class="commission">0.00€</span> (<span class="commissionPercent">0.00%</span>)</p>
         <p>Prezzo Lordo Scontato 60%: <span class="discountedPrice60">0.00€</span></p>
-        <p>Netto Azienda Senza Costi Vari: <span class="netCompany">0.00€</span></p>
+        <p>Netto Azienda: <span class="netCompany">0.00€</span></p>
       </div>
       <hr>
     `;
@@ -100,10 +105,11 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
-  // Esegue i calcoli per la riga prodotto in base allo sconto inserito e alla categoria del prodotto
+  // Esegue i calcoli per il prodotto in base allo sconto inserito e alla categoria selezionata
   function calculateProduct(row, product) {
     const prezzoLordo = parseFloat(product.PrezzoLordo);
-    const categoria = product.Categoria.toLowerCase();
+    const categoriaSelect = row.querySelector(".categoria-select");
+    const categoria = categoriaSelect.value.toLowerCase();
     const discountInput = row.querySelector(".discount-input");
     const discount = parseFloat(discountInput.value);
 
@@ -141,8 +147,8 @@ document.addEventListener("DOMContentLoaded", function() {
       netPriceElem.innerText = "NON AUTORIZZATO";
       commissionElem.innerText = "NON AUTORIZZATO";
       commissionPercentElem.innerText = "NON AUTORIZZATO";
-      netCompanyElem.innerText = "NON AUTORIZZATO";
       discountedPrice60Elem.innerText = "NON AUTORIZZATO";
+      netCompanyElem.innerText = "NON AUTORIZZATO";
       return;
     }
 
@@ -156,7 +162,9 @@ document.addEventListener("DOMContentLoaded", function() {
     const totalCommission = baseCommission + extraCommission;
     const commissionPercent = (totalCommission / netPrice) * 100;
     const discountedPrice60 = prezzoLordo * 0.4;
-    const netCompany = netPrice - totalCommission;
+    // Sottrai il costo variabile (TRINST) preso dal CSV
+    const trinst = parseFloat(product.TRINST);
+    const netCompany = netPrice - totalCommission - trinst;
 
     netPriceElem.innerText = netPrice.toFixed(2) + "€";
     commissionElem.innerText = totalCommission.toFixed(2) + "€";
@@ -165,7 +173,7 @@ document.addEventListener("DOMContentLoaded", function() {
     netCompanyElem.innerText = netCompany.toFixed(2) + "€";
   }
 
-  // Calcolo globale: somma dei “Netto Azienda” di tutti i prodotti meno i costi vari inseriti
+  // Calcolo globale: somma dei “Netto Azienda” di tutti i prodotti
   calculateGlobalCostsBtn.addEventListener("click", function() {
     let totalNetCompany = 0;
     const productRows = document.querySelectorAll(".product-row");
@@ -178,14 +186,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }
       }
     });
-
-    const extraCosts = parseFloat(document.getElementById("extraCosts").value);
-    if (isNaN(extraCosts)) {
-      alert("Inserisci un valore valido per i costi vari.");
-      return;
-    }
-
-    const finalGlobalNet = totalNetCompany - extraCosts;
-    finalGlobalNetElem.innerText = finalGlobalNet.toFixed(2) + "€";
+    finalGlobalNetElem.innerText = totalNetCompany.toFixed(2) + "€";
   });
 });
