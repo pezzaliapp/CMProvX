@@ -68,21 +68,21 @@ document.addEventListener("DOMContentLoaded", function() {
     searchInput.value = "";
   });
 
-  // Crea una "riga prodotto" con id univoci e dropdown per la categoria e campo sconto
+  // Crea una "riga prodotto" con id univoci, dropdown per la categoria e campo per lo sconto
   function addProductRow(product) {
     rowCounter++;
     productsSection.style.display = "block";
     globalCostsSection.style.display = "block";
 
-    // Generiamo id univoci per il dropdown e il campo sconto
+    // Genera id univoci per il dropdown e il campo sconto
     const categoriaId = `categoria-${product.Codice}-${rowCounter}`;
     const discountId = `discount-${product.Codice}-${rowCounter}`;
 
-    // Otteniamo la categoria proveniente dal CSV (in minuscolo per confronto)
+    // Otteniamo la categoria presente nel CSV (in minuscolo per confronto)
     const categoryFromCsv = product.Categoria.toLowerCase();
     let categorySelectHtml = "";
-    // Se la categoria CSV è "rivenditore", il dropdown propone tutte e tre le opzioni;
-    // altrimenti, il dropdown è abilitato e mostra la categoria corrente e l'unica alternativa "rivenditore".
+    // Se il CSV indica "rivenditore", il dropdown propone tutte le opzioni
+    // Altrimenti, il dropdown mostra la categoria corrente e l’unica alternativa è "rivenditore"
     if (categoryFromCsv === "rivenditore") {
       categorySelectHtml = `
         <select id="${categoriaId}" class="categoria-select">
@@ -121,17 +121,18 @@ document.addEventListener("DOMContentLoaded", function() {
     `;
     productsList.appendChild(row);
 
-    // Associa il calcolo al pulsante della riga
+    // Associa il pulsante Calcola alla funzione di calcolo della riga corrente
     const calcBtn = row.querySelector(".calculateBtn");
     calcBtn.addEventListener("click", function() {
       calculateProduct(row, product);
     });
   }
 
-  // Esegue i calcoli per il prodotto in base allo sconto inserito e alla categoria selezionata
+  // Calcola i valori per il prodotto in base allo sconto inserito e alla categoria selezionata
   function calculateProduct(row, product) {
     const prezzoLordo = parseFloat(product.PrezzoLordo);
     const categoriaSelect = row.querySelector(".categoria-select");
+    // La categoria da utilizzare è quella attualmente selezionata nel dropdown
     const categoria = categoriaSelect.value.toLowerCase();
     const discountInput = row.querySelector(".discount-input");
     const discount = parseFloat(discountInput.value);
@@ -147,6 +148,7 @@ document.addEventListener("DOMContentLoaded", function() {
       return;
     }
 
+    // Determina i parametri di calcolo in base alla categoria selezionata
     let baseRate, maxDiscount;
     switch (categoria) {
       case "rivenditore":
@@ -166,6 +168,7 @@ document.addEventListener("DOMContentLoaded", function() {
         maxDiscount = 0;
     }
 
+    // Se lo sconto inserito supera il maxDiscount per la categoria, blocca il calcolo
     if (discount > maxDiscount) {
       netPriceElem.innerText = "NON AUTORIZZATO";
       commissionElem.innerText = "NON AUTORIZZATO";
@@ -185,7 +188,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const totalCommission = baseCommission + extraCommission;
     const commissionPercent = (totalCommission / netPrice) * 100;
     const discountedPrice60 = prezzoLordo * 0.4;
-    // Sottrai il costo variabile (TRINST) preso dal CSV
+    // Sottraiamo il costo variabile (TRINST) preso dal CSV
     const trinst = parseFloat(product.TRINST);
     const netCompany = netPrice - totalCommission - trinst;
 
@@ -196,13 +199,13 @@ document.addEventListener("DOMContentLoaded", function() {
     netCompanyElem.innerText = netCompany.toFixed(2) + "€";
   }
 
-  // Calcolo globale: somma dei “Netto Azienda” di tutti i prodotti
+  // Calcola il totale "Netto Azienda" sommando i valori di tutte le righe prodotto
   calculateGlobalCostsBtn.addEventListener("click", function() {
     let totalNetCompany = 0;
     const productRows = document.querySelectorAll(".product-row");
     productRows.forEach(row => {
       const netCompanyText = row.querySelector(".netCompany").innerText;
-      if(netCompanyText !== "NON AUTORIZZATO") {
+      if (netCompanyText !== "NON AUTORIZZATO") {
         const value = parseFloat(netCompanyText.replace("€", ""));
         if (!isNaN(value)) {
           totalNetCompany += value;
