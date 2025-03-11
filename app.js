@@ -67,11 +67,31 @@ document.addEventListener("DOMContentLoaded", function() {
     searchInput.value = "";
   });
 
-  // Crea una "riga prodotto" con i dati, il menu per selezionare la categoria,
-  // la visualizzazione dei costi variabili (TRINST) e il form per inserire lo sconto
+  // Funzione per creare una "riga prodotto"
   function addProductRow(product) {
     productsSection.style.display = "block";
     globalCostsSection.style.display = "block";
+
+    // Otteniamo la categoria proveniente dal CSV (in minuscolo per confronto)
+    const categoryFromCsv = product.Categoria.toLowerCase();
+    let categorySelectHtml = "";
+    // Se la categoria CSV è "rivenditore", abilitiamo la modifica proponendo tutte e tre le opzioni;
+    // altrimenti mostriamo solo la categoria proveniente dal CSV e disabilitiamo il select.
+    if (categoryFromCsv === "rivenditore") {
+      categorySelectHtml = `
+        <select id="categoria-${product.Codice}" class="categoria-select">
+          <option value="rivenditore" selected>Rivenditore</option>
+          <option value="smontagomme">Smontagomme + Equilibratici</option>
+          <option value="sollevamento">Sollevamento</option>
+        </select>
+      `;
+    } else {
+      categorySelectHtml = `
+        <select id="categoria-${product.Codice}" class="categoria-select" disabled>
+          <option value="${categoryFromCsv}" selected>${product.Categoria}</option>
+        </select>
+      `;
+    }
 
     const row = document.createElement("div");
     row.className = "product-row";
@@ -79,11 +99,7 @@ document.addEventListener("DOMContentLoaded", function() {
       <h3>Prodotto: ${product.Codice} - ${product.Descrizione}</h3>
       <p><strong>Prezzo Lordo:</strong> <span class="prezzo-lordo">${parseFloat(product.PrezzoLordo).toFixed(2)}€</span></p>
       <label for="categoria-${product.Codice}"><strong>Seleziona la Categoria:</strong></label>
-      <select id="categoria-${product.Codice}" class="categoria-select">
-        <option value="rivenditore" ${product.Categoria.toLowerCase() === "rivenditore" ? "selected" : ""}>Rivenditore</option>
-        <option value="smontagomme" ${product.Categoria.toLowerCase() === "smontagomme" ? "selected" : ""}>Smontagomme + Equilibratici</option>
-        <option value="sollevamento" ${product.Categoria.toLowerCase() === "sollevamento" ? "selected" : ""}>Sollevamento</option>
-      </select>
+      ${categorySelectHtml}
       <p><strong>Costi Variabili (TRINST):</strong> <span class="trinst">${parseFloat(product.TRINST).toFixed(2)}€</span></p>
       <label for="discount-${product.Codice}"><strong>Sconto Applicato (%):</strong></label>
       <input type="number" id="discount-${product.Codice}" class="discount-input" placeholder="Inserisci sconto">
