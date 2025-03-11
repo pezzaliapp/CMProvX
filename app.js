@@ -12,6 +12,19 @@ document.addEventListener("DOMContentLoaded", function() {
   const calculateGlobalCostsBtn = document.getElementById("calculateGlobalCostsBtn");
   const finalGlobalNetElem = document.getElementById("finalGlobalNet");
 
+  // Funzione per normalizzare il valore della categoria
+  function normalizeCategory(cat) {
+    cat = cat.toLowerCase();
+    if (cat.includes("rivenditore")) {
+      return "rivenditore";
+    } else if (cat.includes("smontagomme")) {
+      return "smontagomme";
+    } else if (cat.includes("sollevamento")) {
+      return "sollevamento";
+    }
+    return cat;
+  }
+
   // Gestione import CSV tramite PapaParse
   importFile.addEventListener("change", function(event) {
     const file = event.target.files[0];
@@ -78,12 +91,12 @@ document.addEventListener("DOMContentLoaded", function() {
     const categoriaId = `categoria-${product.Codice}-${rowCounter}`;
     const discountId = `discount-${product.Codice}-${rowCounter}`;
 
-    // Otteniamo la categoria presente nel CSV (in minuscolo per confronto)
-    const categoryFromCsv = product.Categoria.toLowerCase();
+    // Normalizza la categoria proveniente dal CSV
+    const normalizedCategory = normalizeCategory(product.Categoria);
     let categorySelectHtml = "";
-    // Se il CSV indica "rivenditore", il dropdown propone tutte le opzioni
+    // Se il CSV indica "rivenditore", il dropdown propone tutte le opzioni;
     // Altrimenti, il dropdown mostra la categoria corrente e l’unica alternativa è "rivenditore"
-    if (categoryFromCsv === "rivenditore") {
+    if (normalizedCategory === "rivenditore") {
       categorySelectHtml = `
         <select id="${categoriaId}" class="categoria-select">
           <option value="rivenditore" selected>Rivenditore</option>
@@ -94,7 +107,7 @@ document.addEventListener("DOMContentLoaded", function() {
     } else {
       categorySelectHtml = `
         <select id="${categoriaId}" class="categoria-select">
-          <option value="${categoryFromCsv}" selected>${product.Categoria}</option>
+          <option value="${normalizedCategory}" selected>${product.Categoria}</option>
           <option value="rivenditore">Rivenditore</option>
         </select>
       `;
@@ -121,7 +134,7 @@ document.addEventListener("DOMContentLoaded", function() {
     `;
     productsList.appendChild(row);
 
-    // Associa il pulsante Calcola alla funzione di calcolo della riga corrente
+    // Associa il pulsante "Calcola" alla funzione di calcolo della riga corrente
     const calcBtn = row.querySelector(".calculateBtn");
     calcBtn.addEventListener("click", function() {
       calculateProduct(row, product);
