@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", function() {
   let productsData = []; // Array per contenere i dati del CSV
+  let rowCounter = 0; // Contatore per garantire id univoci per ogni riga
   const importFile = document.getElementById("importFile");
   const searchSection = document.getElementById("search-section");
   const searchInput = document.getElementById("searchInput");
@@ -67,19 +68,24 @@ document.addEventListener("DOMContentLoaded", function() {
     searchInput.value = "";
   });
 
-  // Funzione per creare una "riga prodotto"
+  // Crea una "riga prodotto" con id univoci e dropdown per la categoria e campo sconto
   function addProductRow(product) {
+    rowCounter++;
     productsSection.style.display = "block";
     globalCostsSection.style.display = "block";
+
+    // Generiamo id univoci per il dropdown e il campo sconto
+    const categoriaId = `categoria-${product.Codice}-${rowCounter}`;
+    const discountId = `discount-${product.Codice}-${rowCounter}`;
 
     // Otteniamo la categoria proveniente dal CSV (in minuscolo per confronto)
     const categoryFromCsv = product.Categoria.toLowerCase();
     let categorySelectHtml = "";
-    // Se la categoria CSV è "rivenditore", abilitiamo la modifica proponendo tutte e tre le opzioni;
-    // altrimenti mostriamo solo la categoria proveniente dal CSV e disabilitiamo il select.
+    // Se la categoria CSV è "rivenditore", il dropdown propone tutte e tre le opzioni;
+    // altrimenti, il dropdown è abilitato e mostra la categoria corrente e l'unica alternativa "rivenditore".
     if (categoryFromCsv === "rivenditore") {
       categorySelectHtml = `
-        <select id="categoria-${product.Codice}" class="categoria-select">
+        <select id="${categoriaId}" class="categoria-select">
           <option value="rivenditore" selected>Rivenditore</option>
           <option value="smontagomme">Smontagomme + Equilibratici</option>
           <option value="sollevamento">Sollevamento</option>
@@ -87,8 +93,9 @@ document.addEventListener("DOMContentLoaded", function() {
       `;
     } else {
       categorySelectHtml = `
-        <select id="categoria-${product.Codice}" class="categoria-select" disabled>
+        <select id="${categoriaId}" class="categoria-select">
           <option value="${categoryFromCsv}" selected>${product.Categoria}</option>
+          <option value="rivenditore">Rivenditore</option>
         </select>
       `;
     }
@@ -98,11 +105,11 @@ document.addEventListener("DOMContentLoaded", function() {
     row.innerHTML = `
       <h3>Prodotto: ${product.Codice} - ${product.Descrizione}</h3>
       <p><strong>Prezzo Lordo:</strong> <span class="prezzo-lordo">${parseFloat(product.PrezzoLordo).toFixed(2)}€</span></p>
-      <label for="categoria-${product.Codice}"><strong>Seleziona la Categoria:</strong></label>
+      <label for="${categoriaId}"><strong>Seleziona la Categoria:</strong></label>
       ${categorySelectHtml}
       <p><strong>Costi Variabili (TRINST):</strong> <span class="trinst">${parseFloat(product.TRINST).toFixed(2)}€</span></p>
-      <label for="discount-${product.Codice}"><strong>Sconto Applicato (%):</strong></label>
-      <input type="number" id="discount-${product.Codice}" class="discount-input" placeholder="Inserisci sconto">
+      <label for="${discountId}"><strong>Sconto Applicato (%):</strong></label>
+      <input type="number" id="${discountId}" class="discount-input" placeholder="Inserisci sconto">
       <button class="calculateBtn">Calcola</button>
       <div class="results">
         <p>Prezzo Netto: <span class="netPrice">0.00€</span></p>
