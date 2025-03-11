@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", function() {
   const calculateGlobalCostsBtn = document.getElementById("calculateGlobalCostsBtn");
   const finalGlobalNetElem = document.getElementById("finalGlobalNet");
 
-  // Funzione per normalizzare il valore della categoria
+  // Funzione per normalizzare il valore della categoria (es. "Smontagomme + Equilibratrici" -> "smontagomme")
   function normalizeCategory(cat) {
     cat = cat.toLowerCase();
     if (cat.includes("rivenditore")) {
@@ -226,5 +226,56 @@ document.addEventListener("DOMContentLoaded", function() {
       }
     });
     finalGlobalNetElem.innerText = totalNetCompany.toFixed(2) + "€";
+  });
+
+  // Funzione per generare il testo del report
+  function generateReportText() {
+    let report = "Report CMProvX - Calcolo Compensi\n\n";
+    const productRows = document.querySelectorAll(".product-row");
+    productRows.forEach((row, index) => {
+      // Estrae Codice e Descrizione dal titolo (h3)
+      let prodHeader = row.querySelector("h3").innerText;
+      prodHeader = prodHeader.replace("Prodotto: ", "");
+      const prezzoLordo = row.querySelector(".prezzo-lordo").innerText;
+      // Se lo sconto non è stato inserito, lo consideriamo 0
+      const discount = row.querySelector(".discount-input").value || "0";
+      const netPrice = row.querySelector(".netPrice").innerText;
+      const commission = row.querySelector(".commission").innerText;
+      const discountedPrice60 = row.querySelector(".discountedPrice60").innerText;
+      const trinst = row.querySelector(".trinst").innerText;
+      const netCompany = row.querySelector(".netCompany").innerText;
+      
+      report += `Articolo ${index + 1}: ${prodHeader}\n`;
+      report += `Prezzo Lordo: ${prezzoLordo}\n`;
+      report += `Sconto Applicato: ${discount}%\n`;
+      report += `Prezzo Netto: ${netPrice}\n`;
+      report += `Compenso Agente: ${commission}\n`;
+      report += `Prezzo Lordo Scontato 60%: ${discountedPrice60}\n`;
+      report += `Costi Variabili (TRINST): ${trinst}\n`;
+      report += `Netto Azienda: ${netCompany}\n`;
+      report += `----------------------------------------\n`;
+    });
+    return report;
+  }
+
+  // Evento per generare e scaricare il report in formato TXT
+  document.getElementById("generateTxtReportBtn").addEventListener("click", function() {
+    const reportText = generateReportText();
+    const blob = new Blob([reportText], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "report.txt";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // Evento per generare il report e aprire WhatsApp con il messaggio precompilato
+  document.getElementById("generateWhatsappReportBtn").addEventListener("click", function() {
+    const reportText = generateReportText();
+    const whatsappUrl = "https://wa.me/?text=" + encodeURIComponent(reportText);
+    window.open(whatsappUrl, "_blank");
   });
 });
