@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Sfondo circolare -->
+  <circle cx="256" cy="256" r="256" fill="#007bff"/>
+  <!-- Valigetta -->
+  <rect x="96" y="184" width="320" height="200" rx="32" fill="#fff"/>
+  <rect x="144" y="120" width="224" height="64" rx="16" fill="#fff"/>
+  <!-- Simbolo dell'euro -->
+  <text x="256" y="320" font-family="Arial, sans-serif" font-size="96" fill="#007bff" text-anchor="middle" alignment-baseline="middle">€</text>
+</svg>
