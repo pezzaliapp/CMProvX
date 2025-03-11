@@ -1,1 +1,62 @@
-
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CMProvX - Calcolo Compensi</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <!-- Inclusione di PapaParse per il parsing del CSV -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>CMProvX - Calcolo Compensi</h1>
+    
+    <!-- Sezione per importare il listino in CSV -->
+    <section id="import-section">
+      <h2>Importa Listino (CSV)</h2>
+      <input type="file" id="importFile" accept=".csv">
+    </section>
+    
+    <!-- Sezione per la ricerca del prodotto (mostrata dopo l'import del CSV) -->
+    <section id="search-section" style="display:none;">
+      <h2>Cerca Prodotto</h2>
+      <input type="text" id="searchInput" placeholder="Cerca per Codice o Descrizione">
+      <select id="productSelect">
+        <!-- Le opzioni verranno popolate dinamicamente -->
+      </select>
+      <button id="addProductBtn">Aggiungi Prodotto</button>
+    </section>
+    
+    <!-- Sezione per l'elenco dei prodotti selezionati -->
+    <section id="products-section" style="display:none;">
+      <h2>Prodotti Selezionati</h2>
+      <div id="productsList">
+        <!-- Le righe prodotto verranno aggiunte qui -->
+      </div>
+    </section>
+    
+    <!-- Sezione per il calcolo dei costi vari globali -->
+    <section id="global-costs" style="display:none;">
+      <h2>Costi Vari Globali</h2>
+      <label for="extraCosts"><strong>Inserisci Costi Vari (€):</strong></label>
+      <input type="number" id="extraCosts" placeholder="Inserisci costi vari">
+      <button id="calculateGlobalCostsBtn">Calcola Costi Vari</button>
+      <div class="results">
+        <h2>Risultato Finale Totale</h2>
+        <p>Netto Azienda Totale Dopo Costi Vari: <span id="finalGlobalNet">0.00€</span></p>
+      </div>
+    </section>
+  </div>
+  
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(reg => console.log('Service Worker registrato!', reg))
+        .catch(err => console.log('Errore nella registrazione del Service Worker', err));
+    }
+  </script>
+</body>
+</html>
