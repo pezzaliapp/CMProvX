@@ -295,4 +295,57 @@ document.addEventListener("DOMContentLoaded", function() {
     const whatsappUrl = "https://wa.me/?text=" + encodeURIComponent(reportText);
     window.open(whatsappUrl, "_blank");
   });
+
+  // Gestione modulo cliente
+  const showCustomerSectionBtn = document.getElementById("showCustomerSectionBtn");
+  const customerSection = document.getElementById("customer-section");
+  const toggleCustomerFormBtn = document.getElementById("toggleCustomerFormBtn");
+  const customerFormContainer = document.getElementById("customerFormContainer");
+  const closeCustomerFormBtn = document.getElementById("closeCustomerFormBtn");
+  const customerExistingSelect = document.getElementById("customerExisting");
+  const existingCustomerFields = document.getElementById("existingCustomerFields");
+  const newCustomerFields = document.getElementById("newCustomerFields");
+
+  // Mostra o nasconde la sezione cliente
+  showCustomerSectionBtn.addEventListener("click", function() {
+      if (customerSection.style.display === "none" || customerSection.style.display === "") {
+          customerSection.style.display = "block";
+      } else {
+          customerSection.style.display = "none";
+      }
+  });
+
+  // Toggle per il modulo cliente
+  toggleCustomerFormBtn.addEventListener("click", function() {
+      if (customerFormContainer.style.display === "none" || customerFormContainer.style.display === "") {
+          customerFormContainer.style.display = "block";
+      } else {
+          customerFormContainer.style.display = "none";
+      }
+  });
+
+  // Chiude il modulo cliente
+  closeCustomerFormBtn.addEventListener("click", function() {
+      customerFormContainer.style.display = "none";
+  });
+
+  // Gestione visibilità campi in base alla scelta se cliente registrato o nuovo
+  customerExistingSelect.addEventListener("change", function() {
+      if (customerExistingSelect.value === "si") {
+          existingCustomerFields.style.display = "block";
+          newCustomerFields.style.display = "none";
+      } else {
+          existingCustomerFields.style.display = "none";
+          newCustomerFields.style.display = "block";
+      }
+  });
+
+  // Imposta visibilità iniziale dei campi basata sul valore predefinito
+  if (customerExistingSelect.value === "si") {
+      existingCustomerFields.style.display = "block";
+      newCustomerFields.style.display = "none";
+  } else {
+      existingCustomerFields.style.display = "none";
+      newCustomerFields.style.display = "block";
+  }
 });
