@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", function() {
   const existingCustomerFields = document.getElementById("existingCustomerFields");
   const newCustomerFields = document.getElementById("newCustomerFields");
 
-  // Funzione per normalizzare il valore della categoria (es. "Smontagomme + Equilibratrici" -> "smontagomme")
+  // Funzione per normalizzare il valore della categoria
   function normalizeCategory(cat) {
     cat = cat.toLowerCase();
     if (cat.includes("rivenditore")) {
@@ -35,7 +35,7 @@ document.addEventListener("DOMContentLoaded", function() {
     return cat;
   }
 
-  // Gestione import CSV tramite PapaParse
+  // Import CSV tramite PapaParse
   importFile.addEventListener("change", function(event) {
     const file = event.target.files[0];
     if (file) {
@@ -45,7 +45,6 @@ document.addEventListener("DOMContentLoaded", function() {
         complete: function(results) {
           productsData = results.data;
           console.log("Listino importato:", productsData);
-          // Mostra la sezione di ricerca e popola il menu a tendina
           searchSection.style.display = "block";
           populateProductSelect(productsData);
         },
@@ -67,7 +66,7 @@ document.addEventListener("DOMContentLoaded", function() {
     populateProductSelect(filtered);
   });
 
-  // Popola il menu a tendina con i prodotti (ogni opzione include i dati in un data-attribute)
+  // Popola il menu a tendina con i prodotti
   function populateProductSelect(products) {
     productSelect.innerHTML = "";
     products.forEach(product => {
@@ -91,21 +90,17 @@ document.addEventListener("DOMContentLoaded", function() {
     searchInput.value = "";
   });
 
-  // Crea una "riga prodotto" con id univoci, dropdown per la categoria, campo per lo sconto e opzioni per calcolare, modificare o rimuovere
+  // Crea una "riga prodotto" racchiusa in un <details> con possibilità di calcolare, modificare e rimuovere
   function addProductRow(product) {
     rowCounter++;
     productsSection.style.display = "block";
     globalCostsSection.style.display = "block";
 
-    // Genera id univoci per il dropdown e il campo sconto
     const categoriaId = `categoria-${product.Codice}-${rowCounter}`;
     const discountId = `discount-${product.Codice}-${rowCounter}`;
 
-    // Normalizza la categoria proveniente dal CSV
     const normalizedCategory = normalizeCategory(product.Categoria);
     let categorySelectHtml = "";
-    // Se il CSV indica "rivenditore", il dropdown propone tutte le opzioni;
-    // Altrimenti, il dropdown mostra la categoria corrente e l’unica alternativa è "rivenditore"
     if (normalizedCategory === "rivenditore") {
       categorySelectHtml = `
         <select id="${categoriaId}" class="categoria-select">
@@ -123,7 +118,6 @@ document.addEventListener("DOMContentLoaded", function() {
       `;
     }
 
-    // Creazione del contenuto della riga prodotto (escluso il titolo, che verrà messo nel <summary>)
     const row = document.createElement("div");
     row.className = "product-row";
     row.innerHTML = `
@@ -144,7 +138,6 @@ document.addEventListener("DOMContentLoaded", function() {
       <hr>
     `;
 
-    // Creazione dell'elemento <details> per racchiudere il prodotto in un menu cliccabile
     const details = document.createElement("details");
     details.className = "product-details";
     const summary = document.createElement("summary");
@@ -154,27 +147,53 @@ document.addEventListener("DOMContentLoaded", function() {
 
     productsList.appendChild(details);
 
-    // Associa il pulsante "Calcola" alla funzione di calcolo della riga corrente
+    // Associa la funzione di calcolo al pulsante "Calcola"
     const calcBtn = row.querySelector(".calculateBtn");
     calcBtn.addEventListener("click", function() {
       calculateProduct(row, product);
     });
 
-    // Associa il pulsante "Rimuovi Prodotto" alla rimozione dell'elemento <details>
+    // Calcola automaticamente al variare dello sconto e della categoria
+    const discountInput = row.querySelector(".discount-input");
+    discountInput.addEventListener("input", function() {
+      calculateProduct(row, product);
+    });
+    const categoriaSelectElem = row.querySelector(".categoria-select");
+    categoriaSelectElem.addEventListener("change", function() {
+      calculateProduct(row, product);
+    });
+
+    // Rimozione del prodotto con aggiornamento del totale
     const removeBtn = row.querySelector(".removeBtn");
     removeBtn.addEventListener("click", function() {
       if (confirm("Sei sicuro di voler rimuovere questo prodotto?")) {
         productsList.removeChild(details);
+        updateGlobalCost();
       }
     });
   }
 
-  // Calcola i valori per il prodotto in base allo sconto inserito e alla categoria selezionata
+  // Funzione per aggiornare il totale globale (Netto Azienda)
+  function updateGlobalCost() {
+    let totalNetCompany = 0;
+    const productRows = document.querySelectorAll(".product-row");
+    productRows.forEach(row => {
+      const netCompanyText = row.querySelector(".netCompany").innerText;
+      if (netCompanyText !== "NON AUTORIZZATO") {
+        const value = parseFloat(netCompanyText.replace("€", ""));
+        if (!isNaN(value)) {
+          totalNetCompany += value;
+        }
+      }
+    });
+    finalGlobalNetElem.innerText = totalNetCompany.toFixed(2) + "€";
+  }
+
+  // Calcola i valori per il prodotto e aggiorna il totale globale automaticamente
   function calculateProduct(row, product) {
     const prezzoLordo = parseFloat(product.PrezzoLordo);
-    const categoriaSelect = row.querySelector(".categoria-select");
-    // La categoria da utilizzare è quella attualmente selezionata nel dropdown
-    const categoria = categoriaSelect.value.toLowerCase();
+    const categoriaSelectElem = row.querySelector(".categoria-select");
+    const categoria = categoriaSelectElem.value.toLowerCase();
     const discountInput = row.querySelector(".discount-input");
     const discount = parseFloat(discountInput.value);
 
@@ -185,11 +204,15 @@ document.addEventListener("DOMContentLoaded", function() {
     const netCompanyElem = row.querySelector(".netCompany");
 
     if (isNaN(prezzoLordo) || isNaN(discount) || prezzoLordo <= 0 || discount < 0 || discount > 100) {
-      alert("Inserisci valori validi per il prodotto " + product.Codice);
+      netPriceElem.innerText = "";
+      commissionElem.innerText = "";
+      commissionPercentElem.innerText = "";
+      discountedPrice60Elem.innerText = "";
+      netCompanyElem.innerText = "";
+      updateGlobalCost();
       return;
     }
 
-    // Determina i parametri di calcolo in base alla categoria selezionata
     let baseRate, maxDiscount;
     switch (categoria) {
       case "rivenditore":
@@ -209,13 +232,13 @@ document.addEventListener("DOMContentLoaded", function() {
         maxDiscount = 0;
     }
 
-    // Se lo sconto inserito supera il maxDiscount per la categoria, blocca il calcolo
     if (discount > maxDiscount) {
       netPriceElem.innerText = "NON AUTORIZZATO";
       commissionElem.innerText = "NON AUTORIZZATO";
       commissionPercentElem.innerText = "NON AUTORIZZATO";
       discountedPrice60Elem.innerText = "NON AUTORIZZATO";
       netCompanyElem.innerText = "NON AUTORIZZATO";
+      updateGlobalCost();
       return;
     }
 
@@ -229,7 +252,6 @@ document.addEventListener("DOMContentLoaded", function() {
     const totalCommission = baseCommission + extraCommission;
     const commissionPercent = (totalCommission / netPrice) * 100;
     const discountedPrice60 = prezzoLordo * 0.4;
-    // Sottraiamo il costo variabile (TRINST) preso dal CSV
     const trinst = parseFloat(product.TRINST);
     const netCompany = netPrice - totalCommission - trinst;
 
@@ -238,31 +260,30 @@ document.addEventListener("DOMContentLoaded", function() {
     commissionPercentElem.innerText = commissionPercent.toFixed(2) + "%";
     discountedPrice60Elem.innerText = discountedPrice60.toFixed(2) + "€";
     netCompanyElem.innerText = netCompany.toFixed(2) + "€";
+    updateGlobalCost();
   }
 
-  // Funzione per generare il testo del report includendo i dati del cliente
+  // Permane il pulsante manuale, ma il totale si aggiorna in automatico
+  calculateGlobalCostsBtn.addEventListener("click", updateGlobalCost);
+
+  // Genera il report TXT includendo i dati del cliente
   function generateReportText() {
     let report = "Report CMProvX - Calcolo Compensi\n\n";
-    
-    // Aggiunge la data odierna
     const oggi = new Date().toLocaleDateString();
     report += `Data odierna: ${oggi}\n`;
-    
-    // Legge i dati del cliente dal modulo
+
     const customerTypeElem = document.getElementById("customerType");
     const customerExistingElem = document.getElementById("customerExisting");
     const customerNameElem = document.getElementById("customerName");
     const shippingAddressElem = document.getElementById("shippingAddress");
-    
+
     let customerReport = "";
-    // Tipo cliente
     if (customerTypeElem.value === "finale") {
       customerReport += "Tipo Cliente: Cliente Finale\n";
     } else if (customerTypeElem.value === "rivenditore") {
       customerReport += "Tipo Cliente: Rivenditore\n";
     }
-    
-    // Cliente registrato o nuovo
+
     if (customerExistingElem.value === "si") {
       const nome = customerNameElem.value.trim();
       const indirizzo = shippingAddressElem.value.trim();
@@ -273,16 +294,12 @@ document.addEventListener("DOMContentLoaded", function() {
     } else {
       customerReport += "Cliente nuovo da registrare\n";
     }
-    
     report += customerReport + "\n";
-    
-    // Report dettagli prodotti
+
     const productRows = document.querySelectorAll(".product-row");
     productRows.forEach((row, index) => {
-      // Estrae Codice e Descrizione dal titolo del <summary> corrispondente
       let summaryText = row.parentElement.querySelector("summary").innerText;
       const prezzoLordo = row.querySelector(".prezzo-lordo").innerText;
-      // Se lo sconto non è stato inserito, lo consideriamo 0
       const discount = row.querySelector(".discount-input").value || "0";
       const netPrice = row.querySelector(".netPrice").innerText;
       const commission = row.querySelector(".commission").innerText;
@@ -303,7 +320,6 @@ document.addEventListener("DOMContentLoaded", function() {
     return report;
   }
 
-  // Evento per generare e scaricare il report in formato TXT
   document.getElementById("generateTxtReportBtn").addEventListener("click", function() {
     const reportText = generateReportText();
     const blob = new Blob([reportText], { type: "text/plain;charset=utf-8" });
@@ -317,7 +333,6 @@ document.addEventListener("DOMContentLoaded", function() {
     URL.revokeObjectURL(url);
   });
 
-  // Evento per generare il report e aprire WhatsApp con il messaggio precompilato
   document.getElementById("generateWhatsappReportBtn").addEventListener("click", function() {
     const reportText = generateReportText();
     const whatsappUrl = "https://wa.me/?text=" + encodeURIComponent(reportText);
@@ -325,7 +340,6 @@ document.addEventListener("DOMContentLoaded", function() {
   });
 
   // Gestione modulo cliente
-  // Mostra o nasconde la sezione cliente
   showCustomerSectionBtn.addEventListener("click", function() {
     if (customerSection.style.display === "none" || customerSection.style.display === "") {
       customerSection.style.display = "block";
@@ -334,7 +348,6 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   });
 
-  // Toggle per il modulo cliente
   toggleCustomerFormBtn.addEventListener("click", function() {
     if (customerFormContainer.style.display === "none" || customerFormContainer.style.display === "") {
       customerFormContainer.style.display = "block";
@@ -343,12 +356,10 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   });
 
-  // Chiude il modulo cliente
   closeCustomerFormBtn.addEventListener("click", function() {
     customerFormContainer.style.display = "none";
   });
 
-  // Gestione visibilità campi in base alla scelta se cliente registrato o nuovo
   customerExistingSelect.addEventListener("change", function() {
     if (customerExistingSelect.value === "si") {
       existingCustomerFields.style.display = "block";
@@ -359,7 +370,6 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   });
 
-  // Imposta visibilità iniziale dei campi basata sul valore predefinito
   if (customerExistingSelect.value === "si") {
     existingCustomerFields.style.display = "block";
     newCustomerFields.style.display = "none";
