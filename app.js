@@ -12,6 +12,16 @@ document.addEventListener("DOMContentLoaded", function() {
   const calculateGlobalCostsBtn = document.getElementById("calculateGlobalCostsBtn");
   const finalGlobalNetElem = document.getElementById("finalGlobalNet");
 
+  // Elementi per la gestione anagrafica cliente
+  const showCustomerSectionBtn = document.getElementById("showCustomerSectionBtn");
+  const customerSection = document.getElementById("customer-section");
+  const toggleCustomerFormBtn = document.getElementById("toggleCustomerFormBtn");
+  const customerFormContainer = document.getElementById("customerFormContainer");
+  const closeCustomerFormBtn = document.getElementById("closeCustomerFormBtn");
+  const customerExistingSelect = document.getElementById("customerExisting");
+  const existingCustomerFields = document.getElementById("existingCustomerFields");
+  const newCustomerFields = document.getElementById("newCustomerFields");
+
   // Funzione per normalizzare il valore della categoria (es. "Smontagomme + Equilibratrici" -> "smontagomme")
   function normalizeCategory(cat) {
     cat = cat.toLowerCase();
@@ -230,25 +240,43 @@ document.addEventListener("DOMContentLoaded", function() {
     netCompanyElem.innerText = netCompany.toFixed(2) + "€";
   }
 
-  // Calcola il totale "Netto Azienda" sommando i valori di tutte le righe prodotto
-  calculateGlobalCostsBtn.addEventListener("click", function() {
-    let totalNetCompany = 0;
-    const productRows = document.querySelectorAll(".product-row");
-    productRows.forEach(row => {
-      const netCompanyText = row.querySelector(".netCompany").innerText;
-      if (netCompanyText !== "NON AUTORIZZATO") {
-        const value = parseFloat(netCompanyText.replace("€", ""));
-        if (!isNaN(value)) {
-          totalNetCompany += value;
-        }
-      }
-    });
-    finalGlobalNetElem.innerText = totalNetCompany.toFixed(2) + "€";
-  });
-
-  // Funzione per generare il testo del report
+  // Funzione per generare il testo del report includendo i dati del cliente
   function generateReportText() {
     let report = "Report CMProvX - Calcolo Compensi\n\n";
+    
+    // Aggiunge la data odierna
+    const oggi = new Date().toLocaleDateString();
+    report += `Data odierna: ${oggi}\n`;
+    
+    // Legge i dati del cliente dal modulo
+    const customerTypeElem = document.getElementById("customerType");
+    const customerExistingElem = document.getElementById("customerExisting");
+    const customerNameElem = document.getElementById("customerName");
+    const shippingAddressElem = document.getElementById("shippingAddress");
+    
+    let customerReport = "";
+    // Tipo cliente
+    if (customerTypeElem.value === "finale") {
+      customerReport += "Tipo Cliente: Cliente Finale\n";
+    } else if (customerTypeElem.value === "rivenditore") {
+      customerReport += "Tipo Cliente: Rivenditore\n";
+    }
+    
+    // Cliente registrato o nuovo
+    if (customerExistingElem.value === "si") {
+      const nome = customerNameElem.value.trim();
+      const indirizzo = shippingAddressElem.value.trim();
+      customerReport += `Cliente già registrato: ${nome || "Nessun nominativo inserito"}\n`;
+      if (indirizzo) {
+        customerReport += `Indirizzo di spedizione: ${indirizzo}\n`;
+      }
+    } else {
+      customerReport += "Cliente nuovo da registrare\n";
+    }
+    
+    report += customerReport + "\n";
+    
+    // Report dettagli prodotti
     const productRows = document.querySelectorAll(".product-row");
     productRows.forEach((row, index) => {
       // Estrae Codice e Descrizione dal titolo del <summary> corrispondente
@@ -297,55 +325,46 @@ document.addEventListener("DOMContentLoaded", function() {
   });
 
   // Gestione modulo cliente
-  const showCustomerSectionBtn = document.getElementById("showCustomerSectionBtn");
-  const customerSection = document.getElementById("customer-section");
-  const toggleCustomerFormBtn = document.getElementById("toggleCustomerFormBtn");
-  const customerFormContainer = document.getElementById("customerFormContainer");
-  const closeCustomerFormBtn = document.getElementById("closeCustomerFormBtn");
-  const customerExistingSelect = document.getElementById("customerExisting");
-  const existingCustomerFields = document.getElementById("existingCustomerFields");
-  const newCustomerFields = document.getElementById("newCustomerFields");
-
   // Mostra o nasconde la sezione cliente
   showCustomerSectionBtn.addEventListener("click", function() {
-      if (customerSection.style.display === "none" || customerSection.style.display === "") {
-          customerSection.style.display = "block";
-      } else {
-          customerSection.style.display = "none";
-      }
+    if (customerSection.style.display === "none" || customerSection.style.display === "") {
+      customerSection.style.display = "block";
+    } else {
+      customerSection.style.display = "none";
+    }
   });
 
   // Toggle per il modulo cliente
   toggleCustomerFormBtn.addEventListener("click", function() {
-      if (customerFormContainer.style.display === "none" || customerFormContainer.style.display === "") {
-          customerFormContainer.style.display = "block";
-      } else {
-          customerFormContainer.style.display = "none";
-      }
+    if (customerFormContainer.style.display === "none" || customerFormContainer.style.display === "") {
+      customerFormContainer.style.display = "block";
+    } else {
+      customerFormContainer.style.display = "none";
+    }
   });
 
   // Chiude il modulo cliente
   closeCustomerFormBtn.addEventListener("click", function() {
-      customerFormContainer.style.display = "none";
+    customerFormContainer.style.display = "none";
   });
 
   // Gestione visibilità campi in base alla scelta se cliente registrato o nuovo
   customerExistingSelect.addEventListener("change", function() {
-      if (customerExistingSelect.value === "si") {
-          existingCustomerFields.style.display = "block";
-          newCustomerFields.style.display = "none";
-      } else {
-          existingCustomerFields.style.display = "none";
-          newCustomerFields.style.display = "block";
-      }
+    if (customerExistingSelect.value === "si") {
+      existingCustomerFields.style.display = "block";
+      newCustomerFields.style.display = "none";
+    } else {
+      existingCustomerFields.style.display = "none";
+      newCustomerFields.style.display = "block";
+    }
   });
 
   // Imposta visibilità iniziale dei campi basata sul valore predefinito
   if (customerExistingSelect.value === "si") {
-      existingCustomerFields.style.display = "block";
-      newCustomerFields.style.display = "none";
+    existingCustomerFields.style.display = "block";
+    newCustomerFields.style.display = "none";
   } else {
-      existingCustomerFields.style.display = "none";
-      newCustomerFields.style.display = "block";
+    existingCustomerFields.style.display = "none";
+    newCustomerFields.style.display = "block";
   }
 });
