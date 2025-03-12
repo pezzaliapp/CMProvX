@@ -81,7 +81,7 @@ document.addEventListener("DOMContentLoaded", function() {
     searchInput.value = "";
   });
 
-  // Crea una "riga prodotto" con id univoci, dropdown per la categoria e campo per lo sconto
+  // Crea una "riga prodotto" con id univoci, dropdown per la categoria, campo per lo sconto e opzioni per calcolare, modificare o rimuovere
   function addProductRow(product) {
     rowCounter++;
     productsSection.style.display = "block";
@@ -113,10 +113,10 @@ document.addEventListener("DOMContentLoaded", function() {
       `;
     }
 
+    // Creazione del contenuto della riga prodotto (escluso il titolo, che verrà messo nel <summary>)
     const row = document.createElement("div");
     row.className = "product-row";
     row.innerHTML = `
-      <h3>Prodotto: ${product.Codice} - ${product.Descrizione}</h3>
       <p><strong>Prezzo Lordo:</strong> <span class="prezzo-lordo">${parseFloat(product.PrezzoLordo).toFixed(2)}€</span></p>
       <label for="${categoriaId}"><strong>Seleziona la Categoria:</strong></label>
       ${categorySelectHtml}
@@ -130,14 +130,32 @@ document.addEventListener("DOMContentLoaded", function() {
         <p>Prezzo Lordo Scontato 60%: <span class="discountedPrice60">0.00€</span></p>
         <p>Netto Azienda: <span class="netCompany">0.00€</span></p>
       </div>
+      <button class="removeBtn">Rimuovi Prodotto</button>
       <hr>
     `;
-    productsList.appendChild(row);
+
+    // Creazione dell'elemento <details> per racchiudere il prodotto in un menu cliccabile
+    const details = document.createElement("details");
+    details.className = "product-details";
+    const summary = document.createElement("summary");
+    summary.innerHTML = `<strong>Prodotto: ${product.Codice} - ${product.Descrizione}</strong>`;
+    details.appendChild(summary);
+    details.appendChild(row);
+
+    productsList.appendChild(details);
 
     // Associa il pulsante "Calcola" alla funzione di calcolo della riga corrente
     const calcBtn = row.querySelector(".calculateBtn");
     calcBtn.addEventListener("click", function() {
       calculateProduct(row, product);
+    });
+
+    // Associa il pulsante "Rimuovi Prodotto" alla rimozione dell'elemento <details>
+    const removeBtn = row.querySelector(".removeBtn");
+    removeBtn.addEventListener("click", function() {
+      if (confirm("Sei sicuro di voler rimuovere questo prodotto?")) {
+        productsList.removeChild(details);
+      }
     });
   }
 
@@ -233,9 +251,8 @@ document.addEventListener("DOMContentLoaded", function() {
     let report = "Report CMProvX - Calcolo Compensi\n\n";
     const productRows = document.querySelectorAll(".product-row");
     productRows.forEach((row, index) => {
-      // Estrae Codice e Descrizione dal titolo (h3)
-      let prodHeader = row.querySelector("h3").innerText;
-      prodHeader = prodHeader.replace("Prodotto: ", "");
+      // Estrae Codice e Descrizione dal titolo del <summary> corrispondente
+      let summaryText = row.parentElement.querySelector("summary").innerText;
       const prezzoLordo = row.querySelector(".prezzo-lordo").innerText;
       // Se lo sconto non è stato inserito, lo consideriamo 0
       const discount = row.querySelector(".discount-input").value || "0";
@@ -245,7 +262,7 @@ document.addEventListener("DOMContentLoaded", function() {
       const trinst = row.querySelector(".trinst").innerText;
       const netCompany = row.querySelector(".netCompany").innerText;
       
-      report += `Articolo ${index + 1}: ${prodHeader}\n`;
+      report += `Articolo ${index + 1}: ${summaryText}\n`;
       report += `Prezzo Lordo: ${prezzoLordo}\n`;
       report += `Sconto Applicato: ${discount}%\n`;
       report += `Prezzo Netto: ${netPrice}\n`;
