@@ -44,9 +44,47 @@
         <p>Netto Azienda Totale: <span id="finalGlobalNet">0.00€</span></p>
       </div>
       <button id="calculateGlobalCostsBtn">Ricalcola Totale</button>
+      <button id="showCustomerSectionBtn">Inserisci Anagrafica Cliente</button>
       <!-- Nuovi pulsanti per generare i report -->
       <button id="generateTxtReportBtn">Genera Report TXT</button>
       <button id="generateWhatsappReportBtn">Genera Report WhatsApp</button>
+    </section>
+    
+    <!-- Sezione per l'anagrafica cliente -->
+    <section id="customer-section" style="display:none;">
+      <h2>Anagrafica Cliente</h2>
+      <button id="toggleCustomerFormBtn">Inserisci/Modifica Anagrafica Cliente</button>
+      <div id="customerFormContainer" style="display:none;">
+        <form id="customerForm">
+          <div>
+            <label for="customerType">Tipo Cliente:</label>
+            <select id="customerType">
+              <option value="finale">Cliente Finale</option>
+              <option value="rivenditore">Rivenditore</option>
+            </select>
+          </div>
+          <div>
+            <label for="customerExisting">Cliente registrato?</label>
+            <select id="customerExisting">
+              <option value="si" selected>Sì</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+          <!-- Campi per cliente già registrato -->
+          <div id="existingCustomerFields">
+            <label for="customerName">Nome Cliente:</label>
+            <input type="text" id="customerName">
+            <label for="shippingAddress">Indirizzo di spedizione (se diverso):</label>
+            <input type="text" id="shippingAddress">
+          </div>
+          <!-- Se il cliente non è registrato viene mostrato il link per compilare la scheda -->
+          <div id="newCustomerFields" style="display:none;">
+            <p>Per un nuovo cliente, compila la scheda cliente:</p>
+            <a href="https://example.com/compila-scheda" target="_blank">Clicca qui per compilare la scheda cliente</a>
+          </div>
+          <button type="button" id="closeCustomerFormBtn">Chiudi Modulo</button>
+        </form>
+      </div>
     </section>
   </div>
   
