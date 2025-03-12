@@ -17,6 +17,9 @@ document.addEventListener("DOMContentLoaded", function() {
   const finalGlobalNetElem = document.getElementById("finalGlobalNet"); // Netto Azienda Totale
   const finalGlobalNetClientElem = document.getElementById("finalGlobalNetClient"); // Prezzo Netto Totale Cliente
 
+  // Elemento per il Tipo di Pagamento
+  const paymentTypeInput = document.getElementById("paymentType");
+
   // Elementi per la gestione dell'anagrafica cliente
   const showCustomerSectionBtn = document.getElementById("showCustomerSectionBtn");
   const customerSection = document.getElementById("customer-section");
@@ -335,6 +338,11 @@ document.addEventListener("DOMContentLoaded", function() {
   
     report += "\n";
     report += `Prezzo netto Totale Cliente: ${totalNetCliente.toFixed(2)}€\n`;
+  
+    // Inserimento del Tipo di Pagamento nel report (prima del Totale Compensi)
+    const paymentTypeValue = paymentTypeInput.value.trim() || "Non specificato";
+    report += `Tipo di Pagamento: ${paymentTypeValue}\n`;
+  
     report += `Totale Compensi: ${totalCommissions.toFixed(2)}€\n`;
     return report;
   }
