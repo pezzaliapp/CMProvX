@@ -273,7 +273,7 @@ document.addEventListener("DOMContentLoaded", function() {
   // Il pulsante "Ricalcola Totale" rimane per eventuali aggiornamenti manuali
   calculateGlobalCostsBtn.addEventListener("click", updateGlobalCost);
   
-  // Funzione per generare il report TXT (include anche i totali)
+  // Funzione per generare il report TXT (mostra solo Prezzo netto Totale Cliente e Totale Compensi)
   function generateReportText() {
     let report = "Report CMProvX - Calcolo Compensi\n\n";
     const oggi = new Date().toLocaleDateString();
@@ -304,7 +304,6 @@ document.addEventListener("DOMContentLoaded", function() {
   
     // Inizializza totali per il riepilogo del report
     let totalNetCliente = 0;
-    let totalNetAzienda = 0;
     let totalCommissions = 0;
   
     const productRows = document.querySelectorAll(".product-row");
@@ -320,10 +319,8 @@ document.addEventListener("DOMContentLoaded", function() {
   
       const netPriceValue = parseFloat(netPriceText.replace("€", "")) || 0;
       const commissionValue = parseFloat(commissionText.replace("€", "")) || 0;
-      const netCompanyValue = parseFloat(netCompanyText.replace("€", "")) || 0;
       totalNetCliente += netPriceValue;
       totalCommissions += commissionValue;
-      totalNetAzienda += netCompanyValue;
   
       report += `Articolo ${index + 1}: ${summaryText}\n`;
       report += `Prezzo Lordo: ${prezzoLordo}\n`;
@@ -338,7 +335,6 @@ document.addEventListener("DOMContentLoaded", function() {
   
     report += "\n";
     report += `Prezzo netto Totale Cliente: ${totalNetCliente.toFixed(2)}€\n`;
-    report += `Prezzo netto Totale: ${totalNetAzienda.toFixed(2)}€\n`;
     report += `Totale Compensi: ${totalCommissions.toFixed(2)}€\n`;
     return report;
   }
@@ -393,7 +389,6 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   });
   
-  // Imposta visibilità iniziale per i campi cliente
   if (customerExistingSelect.value === "si") {
     existingCustomerFields.style.display = "block";
     newCustomerFields.style.display = "none";
