@@ -263,10 +263,10 @@ document.addEventListener("DOMContentLoaded", function() {
     updateGlobalCost();
   }
 
-  // Permane il pulsante manuale, ma il totale si aggiorna in automatico
+  // Anche se il pulsante manuale rimane, il totale si aggiorna in automatico
   calculateGlobalCostsBtn.addEventListener("click", updateGlobalCost);
 
-  // Genera il report TXT includendo i dati del cliente
+  // Genera il report TXT includendo i dati del cliente, i dettagli di ogni articolo e in fondo il riepilogo totale
   function generateReportText() {
     let report = "Report CMProvX - Calcolo Compensi\n\n";
     const oggi = new Date().toLocaleDateString();
@@ -296,27 +296,42 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     report += customerReport + "\n";
 
+    // Inizializza totali per il riepilogo
+    let totalArticles = 0;
+    let totalCommissions = 0;
+
     const productRows = document.querySelectorAll(".product-row");
     productRows.forEach((row, index) => {
       let summaryText = row.parentElement.querySelector("summary").innerText;
-      const prezzoLordo = row.querySelector(".prezzo-lordo").innerText;
+      const prezzoLordo = row.querySelector(".prezzo-lordo").innerText || "0.00€";
       const discount = row.querySelector(".discount-input").value || "0";
-      const netPrice = row.querySelector(".netPrice").innerText;
-      const commission = row.querySelector(".commission").innerText;
-      const discountedPrice60 = row.querySelector(".discountedPrice60").innerText;
-      const trinst = row.querySelector(".trinst").innerText;
-      const netCompany = row.querySelector(".netCompany").innerText;
+      const netPriceText = row.querySelector(".netPrice").innerText || "0.00€";
+      const commissionText = row.querySelector(".commission").innerText || "0.00€";
+      const discountedPrice60 = row.querySelector(".discountedPrice60").innerText || "0.00€";
+      const trinst = row.querySelector(".trinst").innerText || "0.00€";
+      const netCompany = row.querySelector(".netCompany").innerText || "0.00€";
+      
+      // Accumula totali (ignorando eventuali valori "NON AUTORIZZATO")
+      const netPriceValue = parseFloat(netPriceText.replace("€", "")) || 0;
+      const commissionValue = parseFloat(commissionText.replace("€", "")) || 0;
+      totalArticles += netPriceValue;
+      totalCommissions += commissionValue;
       
       report += `Articolo ${index + 1}: ${summaryText}\n`;
       report += `Prezzo Lordo: ${prezzoLordo}\n`;
       report += `Sconto Applicato: ${discount}%\n`;
-      report += `Prezzo Netto: ${netPrice}\n`;
-      report += `Compenso Agente: ${commission}\n`;
+      report += `Prezzo Netto: ${netPriceText}\n`;
+      report += `Compenso Agente: ${commissionText}\n`;
       report += `Prezzo Lordo Scontato 60%: ${discountedPrice60}\n`;
       report += `Costi Variabili (TRINST): ${trinst}\n`;
       report += `Netto Azienda: ${netCompany}\n`;
       report += `----------------------------------------\n`;
     });
+    
+    // Riepilogo finale
+    report += "\n";
+    report += `Totale Articoli (Prezzo Netto): ${totalArticles.toFixed(2)}€\n`;
+    report += `Totale Compensi: ${totalCommissions.toFixed(2)}€\n`;
     return report;
   }
 
