@@ -1,6 +1,8 @@
 document.addEventListener("DOMContentLoaded", function() {
   let productsData = []; // Array per contenere i dati del CSV
   let rowCounter = 0; // Contatore per garantire id univoci per ogni riga
+  
+  // Elementi principali
   const importFile = document.getElementById("importFile");
   const searchSection = document.getElementById("search-section");
   const searchInput = document.getElementById("searchInput");
@@ -10,9 +12,12 @@ document.addEventListener("DOMContentLoaded", function() {
   const productsList = document.getElementById("productsList");
   const globalCostsSection = document.getElementById("global-costs");
   const calculateGlobalCostsBtn = document.getElementById("calculateGlobalCostsBtn");
-  const finalGlobalNetElem = document.getElementById("finalGlobalNet");
+  
+  // Elementi per i totali globali
+  const finalGlobalNetElem = document.getElementById("finalGlobalNet"); // Netto Azienda Totale
+  const finalGlobalNetClientElem = document.getElementById("finalGlobalNetClient"); // Prezzo Netto Totale Cliente
 
-  // Elementi per la gestione anagrafica cliente
+  // Elementi per la gestione dell'anagrafica cliente
   const showCustomerSectionBtn = document.getElementById("showCustomerSectionBtn");
   const customerSection = document.getElementById("customer-section");
   const toggleCustomerFormBtn = document.getElementById("toggleCustomerFormBtn");
@@ -22,7 +27,7 @@ document.addEventListener("DOMContentLoaded", function() {
   const existingCustomerFields = document.getElementById("existingCustomerFields");
   const newCustomerFields = document.getElementById("newCustomerFields");
 
-  // Funzione per normalizzare il valore della categoria
+  // Funzione per normalizzare la categoria
   function normalizeCategory(cat) {
     cat = cat.toLowerCase();
     if (cat.includes("rivenditore")) {
@@ -90,7 +95,7 @@ document.addEventListener("DOMContentLoaded", function() {
     searchInput.value = "";
   });
 
-  // Crea una "riga prodotto" racchiusa in un <details> con possibilità di calcolare, modificare e rimuovere
+  // Crea una riga prodotto racchiusa in un <details> con le opzioni di calcolo e rimozione
   function addProductRow(product) {
     rowCounter++;
     productsSection.style.display = "block";
@@ -98,7 +103,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
     const categoriaId = `categoria-${product.Codice}-${rowCounter}`;
     const discountId = `discount-${product.Codice}-${rowCounter}`;
-
     const normalizedCategory = normalizeCategory(product.Categoria);
     let categorySelectHtml = "";
     if (normalizedCategory === "rivenditore") {
@@ -147,13 +151,11 @@ document.addEventListener("DOMContentLoaded", function() {
 
     productsList.appendChild(details);
 
-    // Associa la funzione di calcolo al pulsante "Calcola"
+    // Associa il pulsante "Calcola" e gli eventi di modifica
     const calcBtn = row.querySelector(".calculateBtn");
     calcBtn.addEventListener("click", function() {
       calculateProduct(row, product);
     });
-
-    // Calcola automaticamente al variare dello sconto e della categoria
     const discountInput = row.querySelector(".discount-input");
     discountInput.addEventListener("input", function() {
       calculateProduct(row, product);
@@ -163,7 +165,7 @@ document.addEventListener("DOMContentLoaded", function() {
       calculateProduct(row, product);
     });
 
-    // Rimozione del prodotto con aggiornamento del totale
+    // Rimozione del prodotto con aggiornamento dei totali
     const removeBtn = row.querySelector(".removeBtn");
     removeBtn.addEventListener("click", function() {
       if (confirm("Sei sicuro di voler rimuovere questo prodotto?")) {
@@ -173,36 +175,41 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
-  // Funzione per aggiornare il totale globale (Netto Azienda)
+  // Funzione per aggiornare i totali globali
   function updateGlobalCost() {
-    let totalNetCompany = 0;
+    let totalNetClient = 0;   // Somma dei Prezzi Netti (Cliente)
+    let totalNetCompany = 0;  // Somma dei Netti Azienda
     const productRows = document.querySelectorAll(".product-row");
     productRows.forEach(row => {
+      const netPriceText = row.querySelector(".netPrice").innerText;
       const netCompanyText = row.querySelector(".netCompany").innerText;
-      if (netCompanyText !== "NON AUTORIZZATO") {
-        const value = parseFloat(netCompanyText.replace("€", ""));
-        if (!isNaN(value)) {
-          totalNetCompany += value;
-        }
+      if (netPriceText && netPriceText !== "NON AUTORIZZATO") {
+        const value = parseFloat(netPriceText.replace("€", "")) || 0;
+        totalNetClient += value;
+      }
+      if (netCompanyText && netCompanyText !== "NON AUTORIZZATO") {
+        const value2 = parseFloat(netCompanyText.replace("€", "")) || 0;
+        totalNetCompany += value2;
       }
     });
+    finalGlobalNetClientElem.innerText = totalNetClient.toFixed(2) + "€";
     finalGlobalNetElem.innerText = totalNetCompany.toFixed(2) + "€";
   }
 
-  // Calcola i valori per il prodotto e aggiorna il totale globale automaticamente
+  // Funzione per calcolare i valori per un prodotto e aggiornare i totali globali
   function calculateProduct(row, product) {
     const prezzoLordo = parseFloat(product.PrezzoLordo);
     const categoriaSelectElem = row.querySelector(".categoria-select");
     const categoria = categoriaSelectElem.value.toLowerCase();
     const discountInput = row.querySelector(".discount-input");
     const discount = parseFloat(discountInput.value);
-
+  
     const netPriceElem = row.querySelector(".netPrice");
     const commissionElem = row.querySelector(".commission");
     const commissionPercentElem = row.querySelector(".commissionPercent");
     const discountedPrice60Elem = row.querySelector(".discountedPrice60");
     const netCompanyElem = row.querySelector(".netCompany");
-
+  
     if (isNaN(prezzoLordo) || isNaN(discount) || prezzoLordo <= 0 || discount < 0 || discount > 100) {
       netPriceElem.innerText = "";
       commissionElem.innerText = "";
@@ -212,7 +219,7 @@ document.addEventListener("DOMContentLoaded", function() {
       updateGlobalCost();
       return;
     }
-
+  
     let baseRate, maxDiscount;
     switch (categoria) {
       case "rivenditore":
@@ -231,7 +238,7 @@ document.addEventListener("DOMContentLoaded", function() {
         baseRate = 0;
         maxDiscount = 0;
     }
-
+  
     if (discount > maxDiscount) {
       netPriceElem.innerText = "NON AUTORIZZATO";
       commissionElem.innerText = "NON AUTORIZZATO";
@@ -241,7 +248,7 @@ document.addEventListener("DOMContentLoaded", function() {
       updateGlobalCost();
       return;
     }
-
+  
     const netPrice = prezzoLordo * (1 - discount / 100);
     const baseNetPrice = prezzoLordo * (1 - maxDiscount / 100);
     const baseCommission = baseNetPrice * baseRate;
@@ -254,7 +261,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const discountedPrice60 = prezzoLordo * 0.4;
     const trinst = parseFloat(product.TRINST);
     const netCompany = netPrice - totalCommission - trinst;
-
+  
     netPriceElem.innerText = netPrice.toFixed(2) + "€";
     commissionElem.innerText = totalCommission.toFixed(2) + "€";
     commissionPercentElem.innerText = commissionPercent.toFixed(2) + "%";
@@ -262,28 +269,27 @@ document.addEventListener("DOMContentLoaded", function() {
     netCompanyElem.innerText = netCompany.toFixed(2) + "€";
     updateGlobalCost();
   }
-
-  // Il pulsante manuale rimane per eventuali aggiornamenti, anche se il totale si aggiorna automaticamente
+  
+  // Il pulsante "Ricalcola Totale" rimane per eventuali aggiornamenti manuali
   calculateGlobalCostsBtn.addEventListener("click", updateGlobalCost);
-
-  // Genera il report TXT includendo i dati del cliente, i dettagli di ogni articolo e in fondo il riepilogo finale
+  
+  // Funzione per generare il report TXT (include anche i totali)
   function generateReportText() {
     let report = "Report CMProvX - Calcolo Compensi\n\n";
     const oggi = new Date().toLocaleDateString();
     report += `Data odierna: ${oggi}\n`;
-
+  
     const customerTypeElem = document.getElementById("customerType");
     const customerExistingElem = document.getElementById("customerExisting");
     const customerNameElem = document.getElementById("customerName");
     const shippingAddressElem = document.getElementById("shippingAddress");
-
+  
     let customerReport = "";
     if (customerTypeElem.value === "finale") {
       customerReport += "Tipo Cliente: Cliente Finale\n";
     } else if (customerTypeElem.value === "rivenditore") {
       customerReport += "Tipo Cliente: Rivenditore\n";
     }
-
     if (customerExistingElem.value === "si") {
       const nome = customerNameElem.value.trim();
       const indirizzo = shippingAddressElem.value.trim();
@@ -295,12 +301,12 @@ document.addEventListener("DOMContentLoaded", function() {
       customerReport += "Cliente nuovo da registrare\n";
     }
     report += customerReport + "\n";
-
-    // Inizializza i totali per il riepilogo:
-    let totalNetCliente = 0;     // Somma dei Prezzi Netti (per il cliente)
-    let totalNetAzienda = 0;     // Somma dei valori "Netto Azienda"
-    let totalCommissions = 0;    // Somma dei compensi
-
+  
+    // Inizializza totali per il riepilogo del report
+    let totalNetCliente = 0;
+    let totalNetAzienda = 0;
+    let totalCommissions = 0;
+  
     const productRows = document.querySelectorAll(".product-row");
     productRows.forEach((row, index) => {
       let summaryText = row.parentElement.querySelector("summary").innerText;
@@ -311,15 +317,14 @@ document.addEventListener("DOMContentLoaded", function() {
       const discountedPrice60 = row.querySelector(".discountedPrice60").innerText || "0.00€";
       const trinst = row.querySelector(".trinst").innerText || "0.00€";
       const netCompanyText = row.querySelector(".netCompany").innerText || "0.00€";
-      
-      // Accumula i totali convertendo le stringhe in valori numerici (ignorando eventuali "NON AUTORIZZATO")
+  
       const netPriceValue = parseFloat(netPriceText.replace("€", "")) || 0;
       const commissionValue = parseFloat(commissionText.replace("€", "")) || 0;
       const netCompanyValue = parseFloat(netCompanyText.replace("€", "")) || 0;
       totalNetCliente += netPriceValue;
       totalCommissions += commissionValue;
       totalNetAzienda += netCompanyValue;
-      
+  
       report += `Articolo ${index + 1}: ${summaryText}\n`;
       report += `Prezzo Lordo: ${prezzoLordo}\n`;
       report += `Sconto Applicato: ${discount}%\n`;
@@ -330,15 +335,14 @@ document.addEventListener("DOMContentLoaded", function() {
       report += `Netto Azienda: ${netCompanyText}\n`;
       report += `----------------------------------------\n`;
     });
-    
-    // Riepilogo finale
+  
     report += "\n";
     report += `Prezzo netto Totale Cliente: ${totalNetCliente.toFixed(2)}€\n`;
     report += `Prezzo netto Totale: ${totalNetAzienda.toFixed(2)}€\n`;
     report += `Totale Compensi: ${totalCommissions.toFixed(2)}€\n`;
     return report;
   }
-
+  
   document.getElementById("generateTxtReportBtn").addEventListener("click", function() {
     const reportText = generateReportText();
     const blob = new Blob([reportText], { type: "text/plain;charset=utf-8" });
@@ -351,14 +355,14 @@ document.addEventListener("DOMContentLoaded", function() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   });
-
+  
   document.getElementById("generateWhatsappReportBtn").addEventListener("click", function() {
     const reportText = generateReportText();
     const whatsappUrl = "https://wa.me/?text=" + encodeURIComponent(reportText);
     window.open(whatsappUrl, "_blank");
   });
-
-  // Gestione modulo cliente
+  
+  // Gestione del modulo cliente
   showCustomerSectionBtn.addEventListener("click", function() {
     if (customerSection.style.display === "none" || customerSection.style.display === "") {
       customerSection.style.display = "block";
@@ -366,7 +370,7 @@ document.addEventListener("DOMContentLoaded", function() {
       customerSection.style.display = "none";
     }
   });
-
+  
   toggleCustomerFormBtn.addEventListener("click", function() {
     if (customerFormContainer.style.display === "none" || customerFormContainer.style.display === "") {
       customerFormContainer.style.display = "block";
@@ -374,11 +378,11 @@ document.addEventListener("DOMContentLoaded", function() {
       customerFormContainer.style.display = "none";
     }
   });
-
+  
   closeCustomerFormBtn.addEventListener("click", function() {
     customerFormContainer.style.display = "none";
   });
-
+  
   customerExistingSelect.addEventListener("change", function() {
     if (customerExistingSelect.value === "si") {
       existingCustomerFields.style.display = "block";
@@ -388,7 +392,8 @@ document.addEventListener("DOMContentLoaded", function() {
       newCustomerFields.style.display = "block";
     }
   });
-
+  
+  // Imposta visibilità iniziale per i campi cliente
   if (customerExistingSelect.value === "si") {
     existingCustomerFields.style.display = "block";
     newCustomerFields.style.display = "none";
