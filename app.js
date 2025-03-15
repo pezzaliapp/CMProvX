@@ -39,8 +39,10 @@ document.addEventListener("DOMContentLoaded", function() {
       return "smontagomme";
     } else if (cat.includes("sollevamento")) {
       return "sollevamento";
+    } else if (cat.includes("special")) {
+      return "special";
     }
-    return cat;
+    return cat; // Se non rientra nei precedenti, torna com'era
   }
 
   // Import CSV tramite PapaParse
@@ -98,22 +100,32 @@ document.addEventListener("DOMContentLoaded", function() {
     searchInput.value = "";
   });
 
-  // Crea una riga prodotto racchiusa in un <details> con le opzioni di calcolo e rimozione
+  // Crea una riga prodotto con le opzioni di calcolo e rimozione
   function addProductRow(product) {
     rowCounter++;
     productsSection.style.display = "block";
     globalCostsSection.style.display = "block";
 
+    const normalizedCategory = normalizeCategory(product.Categoria);
+    
+    // ID univoci
     const categoriaId = `categoria-${product.Codice}-${rowCounter}`;
     const discountId = `discount-${product.Codice}-${rowCounter}`;
-    const normalizedCategory = normalizeCategory(product.Categoria);
+    const specialCommissionId = `commission-special-${product.Codice}-${rowCounter}`;
+
+    // Definizione delle opzioni per la categoria
+    // Se la categoria rilevata è rivenditore, la mettiamo come selected. Altrimenti
+    // usiamo la "vera" categoria del prodotto come selezionata.
     let categorySelectHtml = "";
+
+    // Qui aggiungiamo la voce "special" a entrambe le varianti
     if (normalizedCategory === "rivenditore") {
       categorySelectHtml = `
         <select id="${categoriaId}" class="categoria-select">
           <option value="rivenditore" selected>Rivenditore</option>
           <option value="smontagomme">Smontagomme + Equilibratici</option>
           <option value="sollevamento">Sollevamento</option>
+          <option value="special">Special</option>
         </select>
       `;
     } else {
@@ -121,6 +133,9 @@ document.addEventListener("DOMContentLoaded", function() {
         <select id="${categoriaId}" class="categoria-select">
           <option value="${normalizedCategory}" selected>${product.Categoria}</option>
           <option value="rivenditore">Rivenditore</option>
+          <option value="smontagomme">Smontagomme + Equilibratici</option>
+          <option value="sollevamento">Sollevamento</option>
+          <option value="special">Special</option>
         </select>
       `;
     }
@@ -132,8 +147,14 @@ document.addEventListener("DOMContentLoaded", function() {
       <label for="${categoriaId}"><strong>Seleziona la Categoria:</strong></label>
       ${categorySelectHtml}
       <p><strong>Costi Variabili (TRINST):</strong> <span class="trinst">${parseFloat(product.TRINST).toFixed(2)}€</span></p>
+      
       <label for="${discountId}"><strong>Sconto Applicato (%):</strong></label>
       <input type="number" id="${discountId}" class="discount-input" placeholder="Inserisci sconto">
+      
+      <!-- Campo compenso fisso, visibile solo se la categoria è "special" -->
+      <label for="${specialCommissionId}" class="special-commission-label" style="display:none;"><strong>Compenso Agente (€):</strong></label>
+      <input type="number" id="${specialCommissionId}" class="special-commission-input" style="display:none;" placeholder="Inserisci compenso agente">
+      
       <button class="calculateBtn">Calcola</button>
       <div class="results">
         <p>Prezzo Netto: <span class="netPrice">0.00€</span></p>
@@ -154,28 +175,49 @@ document.addEventListener("DOMContentLoaded", function() {
 
     productsList.appendChild(details);
 
-    // Associa il pulsante "Calcola" e gli eventi di modifica
+    // Elementi di input e pulsanti
     const calcBtn = row.querySelector(".calculateBtn");
+    const discountInput = row.querySelector(".discount-input");
+    const categoriaSelectElem = row.querySelector(".categoria-select");
+    const removeBtn = row.querySelector(".removeBtn");
+    const specialCommissionLabel = row.querySelector(".special-commission-label");
+    const specialCommissionInput = row.querySelector(".special-commission-input");
+
+    // Eventi
     calcBtn.addEventListener("click", function() {
       calculateProduct(row, product);
     });
-    const discountInput = row.querySelector(".discount-input");
     discountInput.addEventListener("input", function() {
       calculateProduct(row, product);
     });
-    const categoriaSelectElem = row.querySelector(".categoria-select");
     categoriaSelectElem.addEventListener("change", function() {
+      // Se la categoria diventa "special", mostriamo i campi per il compenso fisso
+      if (this.value === "special") {
+        specialCommissionLabel.style.display = "inline-block";
+        specialCommissionInput.style.display = "inline-block";
+      } else {
+        specialCommissionLabel.style.display = "none";
+        specialCommissionInput.style.display = "none";
+      }
+      calculateProduct(row, product);
+    });
+    specialCommissionInput.addEventListener("input", function() {
       calculateProduct(row, product);
     });
 
     // Rimozione del prodotto con aggiornamento dei totali
-    const removeBtn = row.querySelector(".removeBtn");
     removeBtn.addEventListener("click", function() {
       if (confirm("Sei sicuro di voler rimuovere questo prodotto?")) {
         productsList.removeChild(details);
         updateGlobalCost();
       }
     });
+
+    // Se il prodotto importato è già di tipo "special", allora mostra da subito il campo compenso
+    if (normalizedCategory === "special") {
+      specialCommissionLabel.style.display = "inline-block";
+      specialCommissionInput.style.display = "inline-block";
+    }
   }
 
   // Funzione per aggiornare i totali globali
@@ -199,21 +241,30 @@ document.addEventListener("DOMContentLoaded", function() {
     finalGlobalNetElem.innerText = totalNetCompany.toFixed(2) + "€";
   }
 
-  // Funzione per calcolare i valori per un prodotto e aggiornare i totali globali
+  // Funzione per calcolare i valori di un singolo prodotto
   function calculateProduct(row, product) {
     const prezzoLordo = parseFloat(product.PrezzoLordo);
     const categoriaSelectElem = row.querySelector(".categoria-select");
     const categoria = categoriaSelectElem.value.toLowerCase();
     const discountInput = row.querySelector(".discount-input");
-    const discount = parseFloat(discountInput.value);
+    const discount = parseFloat(discountInput.value) || 0;
   
     const netPriceElem = row.querySelector(".netPrice");
     const commissionElem = row.querySelector(".commission");
     const commissionPercentElem = row.querySelector(".commissionPercent");
     const discountedPrice60Elem = row.querySelector(".discountedPrice60");
     const netCompanyElem = row.querySelector(".netCompany");
+    const trinst = parseFloat(product.TRINST) || 0;
+
+    // Per la categoria "special" leggiamo il compenso fisso inserito dall'utente
+    const specialCommissionInput = row.querySelector(".special-commission-input");
+    let userSpecialCommission = 0;
+    if (categoria === "special" && specialCommissionInput) {
+      userSpecialCommission = parseFloat(specialCommissionInput.value) || 0;
+    }
   
-    if (isNaN(prezzoLordo) || isNaN(discount) || prezzoLordo <= 0 || discount < 0 || discount > 100) {
+    // Reset campi se input non validi
+    if (isNaN(prezzoLordo) || prezzoLordo <= 0 || discount < 0 || discount > 100) {
       netPriceElem.innerText = "";
       commissionElem.innerText = "";
       commissionPercentElem.innerText = "";
@@ -222,8 +273,17 @@ document.addEventListener("DOMContentLoaded", function() {
       updateGlobalCost();
       return;
     }
+
+    // Prezzo netto (cliente)
+    const netPrice = prezzoLordo * (1 - discount / 100);
+    
+    // Calcolo scontato al 60% (questo rimane la stessa logica)
+    const discountedPrice60 = prezzoLordo * 0.4;
+    let totalCommission = 0;
+    let commissionPercent = 0;
+    let maxDiscount;
+    let baseRate;
   
-    let baseRate, maxDiscount;
     switch (categoria) {
       case "rivenditore":
         baseRate = 0.01;
@@ -237,12 +297,18 @@ document.addEventListener("DOMContentLoaded", function() {
         baseRate = 0.03;
         maxDiscount = 50;
         break;
+      // Se la categoria è "special", non c'è limite di sconto
+      case "special":
+        maxDiscount = 9999; // un valore alto per disattivare la logica di blocco
+        baseRate = 0;       // non usiamo baseRate perché il compenso è immesso manualmente
+        break;
       default:
-        baseRate = 0;
         maxDiscount = 0;
+        baseRate = 0;
     }
   
-    if (discount > maxDiscount) {
+    // Se lo sconto supera la soglia massima (solo se non "special"), non autorizziamo
+    if (categoria !== "special" && discount > maxDiscount) {
       netPriceElem.innerText = "NON AUTORIZZATO";
       commissionElem.innerText = "NON AUTORIZZATO";
       commissionPercentElem.innerText = "NON AUTORIZZATO";
@@ -251,32 +317,46 @@ document.addEventListener("DOMContentLoaded", function() {
       updateGlobalCost();
       return;
     }
-  
-    const netPrice = prezzoLordo * (1 - discount / 100);
-    const baseNetPrice = prezzoLordo * (1 - maxDiscount / 100);
-    const baseCommission = baseNetPrice * baseRate;
-    let extraCommission = 0;
-    if (discount < maxDiscount) {
-      extraCommission = (netPrice - baseNetPrice) * (baseRate / 2);
+
+    if (categoria === "special") {
+      // Compenso fisso inserito dall'utente
+      totalCommission = userSpecialCommission;
+      if (netPrice > 0) {
+        commissionPercent = (totalCommission / netPrice) * 100;
+      }
+    } else {
+      // Calcolo con baseRate e sconto massimo per le altre categorie
+      const baseNetPrice = prezzoLordo * (1 - maxDiscount / 100);
+      const baseCommission = baseNetPrice * baseRate;
+      let extraCommission = 0;
+      if (discount < maxDiscount) {
+        // extraCommission = differenza tra netPrice e baseNetPrice, su cui applichiamo half rate
+        extraCommission = (netPrice - baseNetPrice) * (baseRate / 2);
+      }
+      totalCommission = baseCommission + extraCommission;
+      if (netPrice > 0) {
+        commissionPercent = (totalCommission / netPrice) * 100;
+      }
     }
-    const totalCommission = baseCommission + extraCommission;
-    const commissionPercent = (totalCommission / netPrice) * 100;
-    const discountedPrice60 = prezzoLordo * 0.4;
-    const trinst = parseFloat(product.TRINST);
+  
+    // Netto Azienda
     const netCompany = netPrice - totalCommission - trinst;
   
+    // Aggiorna i campi
     netPriceElem.innerText = netPrice.toFixed(2) + "€";
     commissionElem.innerText = totalCommission.toFixed(2) + "€";
     commissionPercentElem.innerText = commissionPercent.toFixed(2) + "%";
     discountedPrice60Elem.innerText = discountedPrice60.toFixed(2) + "€";
     netCompanyElem.innerText = netCompany.toFixed(2) + "€";
+    
+    // Aggiorna il totale globale
     updateGlobalCost();
   }
   
-  // Il pulsante "Ricalcola Totale" rimane per eventuali aggiornamenti manuali
+  // Pulsante "Ricalcola Totale"
   calculateGlobalCostsBtn.addEventListener("click", updateGlobalCost);
   
-  // Funzione per generare il report TXT (mostra solo Prezzo netto Totale Cliente e Totale Compensi)
+  // Generazione report TXT
   function generateReportText() {
     let report = "Report CMProvX - Calcolo Compensi\n\n";
     const oggi = new Date().toLocaleDateString();
@@ -288,19 +368,19 @@ document.addEventListener("DOMContentLoaded", function() {
     const shippingAddressElem = document.getElementById("shippingAddress");
   
     let customerReport = "";
-    if (customerTypeElem.value === "finale") {
+    if (customerTypeElem && customerTypeElem.value === "finale") {
       customerReport += "Tipo Cliente: Cliente Finale\n";
-    } else if (customerTypeElem.value === "rivenditore") {
+    } else if (customerTypeElem && customerTypeElem.value === "rivenditore") {
       customerReport += "Tipo Cliente: Rivenditore\n";
     }
-    if (customerExistingElem.value === "si") {
+    if (customerExistingElem && customerExistingElem.value === "si") {
       const nome = customerNameElem.value.trim();
       const indirizzo = shippingAddressElem.value.trim();
       customerReport += `Cliente già registrato: ${nome || "Nessun nominativo inserito"}\n`;
       if (indirizzo) {
         customerReport += `Indirizzo di spedizione: ${indirizzo}\n`;
       }
-    } else {
+    } else if (customerExistingElem && customerExistingElem.value === "no") {
       customerReport += "Cliente nuovo da registrare\n";
     }
     report += customerReport + "\n";
@@ -339,7 +419,7 @@ document.addEventListener("DOMContentLoaded", function() {
     report += "\n";
     report += `Prezzo netto Totale Cliente: ${totalNetCliente.toFixed(2)}€\n`;
   
-    // Inserimento del Tipo di Pagamento nel report (prima del Totale Compensi)
+    // Inserimento del Tipo di Pagamento nel report
     const paymentTypeValue = paymentTypeInput.value.trim() || "Non specificato";
     report += `Tipo di Pagamento: ${paymentTypeValue}\n`;
   
@@ -347,6 +427,7 @@ document.addEventListener("DOMContentLoaded", function() {
     return report;
   }
   
+  // Scarica il file TXT
   document.getElementById("generateTxtReportBtn").addEventListener("click", function() {
     const reportText = generateReportText();
     const blob = new Blob([reportText], { type: "text/plain;charset=utf-8" });
@@ -360,6 +441,7 @@ document.addEventListener("DOMContentLoaded", function() {
     URL.revokeObjectURL(url);
   });
   
+  // Apri WhatsApp con il testo del report
   document.getElementById("generateWhatsappReportBtn").addEventListener("click", function() {
     const reportText = generateReportText();
     const whatsappUrl = "https://wa.me/?text=" + encodeURIComponent(reportText);
