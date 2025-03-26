@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CMProvX - Calcolo Compensi</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
   <!-- Inclusione di PapaParse per il parsing del CSV -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 </head>
@@ -53,6 +53,7 @@
       <!-- Pulsanti per generare i report -->
       <button id="generateTxtReportBtn">Genera Report TXT</button>
       <button id="generateWhatsappReportBtn">Genera Report WhatsApp</button>
+      <button id="generateOrderTxtReportBtn">Genera Ordine TXT</button>
     </section>
     
     <!-- Sezione per l'anagrafica cliente -->
@@ -96,12 +97,9 @@
   <script src="app.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('service-worker.js')
-        .then((reg) => console.log('Service Worker registrato!', reg))
-        .catch((err) =>
-          console.log('Errore nella registrazione del Service Worker', err)
-        );
+      navigator.serviceWorker.register('service-worker.js')
+        .then(reg => console.log('Service Worker registrato!', reg))
+        .catch(err => console.log('Errore nella registrazione del Service Worker', err));
     }
   </script>
 </body>
